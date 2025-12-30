@@ -16,12 +16,13 @@ const envSchema = z.object({
   FRONTEND_URL: z.string().url().default('http://localhost:3000'),
 
   // Database
+  // Database
   DATABASE_URL: z.string().url(),
-  DB_HOST: z.string().default('localhost'),
-  DB_PORT: z.string().transform(Number).default('5432'),
-  DB_NAME: z.string().default('fabricloop'),
-  DB_USER: z.string().default('fabricloop'),
-  DB_PASSWORD: z.string(),
+  DB_HOST: z.string().default('localhost').optional(),
+  DB_PORT: z.string().transform(Number).default('5432').optional(),
+  DB_NAME: z.string().default('fabricloop').optional(),
+  DB_USER: z.string().default('fabricloop').optional(),
+  DB_PASSWORD: z.string().optional(),
 
   // Redis
   REDIS_URL: z.string().url().default('redis://localhost:6379'),
