@@ -18,7 +18,7 @@ export class TransactionService {
         return transaction(async (client) => {
             // 1. Verify material availability
             const materialRes = await client.query(
-                'SELECT quantity, seller_id FROM materials WHERE id = $1 FOR UPDATE',
+                'SELECT quantity, seller_id, unit FROM materials WHERE id = $1 FOR UPDATE',
                 [data.material_id]
             )
 
@@ -34,8 +34,8 @@ export class TransactionService {
             // 2. Create the transaction record
             const insertRes = await client.query(
                 `INSERT INTO transactions 
-        (material_id, buyer_id, seller_id, quantity, total_amount, currency, status)
-        VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+        (material_id, buyer_id, seller_id, quantity, total_amount, currency, status, unit)
+        VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7)
         RETURNING *`,
                 [
                     data.material_id,
@@ -43,7 +43,8 @@ export class TransactionService {
                     material.seller_id,
                     data.quantity,
                     data.total_amount,
-                    data.currency
+                    data.currency,
+                    material.unit
                 ]
             )
 
