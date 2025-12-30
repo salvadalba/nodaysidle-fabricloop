@@ -4,6 +4,8 @@ import authRouter from './auth.js'
 import materialsRouter from './materials.js'
 import passportsRouter from './passports.js'
 import messagesRouter from './messages.js'
+import { transactionsRouter } from './transactions.js'
+import { analyticsRouter } from './analytics.js'
 
 const router = Router()
 
