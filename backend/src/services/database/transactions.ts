@@ -44,7 +44,7 @@ export class TransactionService {
                     data.quantity,
                     data.total_amount,
                     data.currency,
-                    material.unit
+                    material.unit || 'kg'
                 ]
             )
 
