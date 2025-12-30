@@ -17,28 +17,39 @@ export default function DashboardPage() {
     const [recentActivity, setRecentActivity] = useState<any[]>([])
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchUser = async () => {
             try {
                 const response = await api.getMe()
                 setUser(response.user as User)
+                return response.user // Return user to verify success
+            } catch {
+                navigate('/login')
+                return null
+            } finally {
+                setLoading(false)
+            }
+        }
 
-                // Fetch stats only if manufacturer for now (as per backend logic)
-                if (response.user.role === 'manufacturer') {
+        const fetchData = async (currentUser: User) => {
+            try {
+                // Fetch stats only if manufacturer
+                if (currentUser.role === 'manufacturer') {
                     const dashboardStats = await api.getDashboardStats()
                     setStats(dashboardStats)
                 }
 
                 // Fetch recent transactions
                 const transactions = await api.getTransactions()
-                setRecentActivity(transactions.slice(0, 5)) // Top 5 recent
+                setRecentActivity(transactions.slice(0, 5))
             } catch (err) {
-                console.error(err)
-                navigate('/login')
-            } finally {
-                setLoading(false)
+                console.error('Failed to fetch dashboard data:', err)
+                // Do NOT navigate to login here. Just log the error.
             }
         }
-        fetchData()
+
+        fetchUser().then(user => {
+            if (user) fetchData(user as User)
+        })
     }, [navigate])
 
     const handleLogout = () => {

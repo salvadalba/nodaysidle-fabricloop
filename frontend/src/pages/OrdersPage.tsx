@@ -9,20 +9,32 @@ export default function OrdersPage() {
     const [user, setUser] = useState<User | null>(null)
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchUser = async () => {
             try {
                 const userRes = await api.getMe()
                 setUser(userRes.user)
-                const data = await api.getTransactions()
-                setTransactions(data)
+                return userRes.user
             } catch (err) {
                 console.error(err)
                 navigate('/login')
+                return null
             } finally {
                 setLoading(false)
             }
         }
-        fetchData()
+
+        const fetchTransactions = async () => {
+            try {
+                const data = await api.getTransactions()
+                setTransactions(data)
+            } catch (err) {
+                console.error('Failed to fetch transactions:', err)
+            }
+        }
+
+        fetchUser().then(user => {
+            if (user) fetchTransactions()
+        })
     }, [navigate])
 
     if (loading) {
