@@ -1,11 +1,14 @@
 import { Pool, PoolConfig } from 'pg'
 import { config } from './index.js'
 
+const isProduction = process.env.NODE_ENV === 'production'
+
 const poolConfig: PoolConfig = {
   connectionString: config.DATABASE_URL,
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+  connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection could not be established
+  ssl: isProduction ? { rejectUnauthorized: false } : undefined,
 }
 
 // Create connection pool

@@ -1,0 +1,29 @@
+# Render Blueprint - https://render.com/docs/blueprint-spec
+services:
+  # Backend API
+  - type: web
+    name: fabricloop-api
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8000
+      - key: API_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRY
+        value: 24h
+      - key: JWT_REFRESH_EXPIRY
+        value: 30d
