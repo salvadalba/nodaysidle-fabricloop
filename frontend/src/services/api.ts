@@ -13,18 +13,41 @@ interface RegisterData {
     phone: string
 }
 
+export interface User {
+    userId: string
+    email: string
+    companyName: string
+    role: string
+    createdAt?: string
+}
+
 interface AuthResponse {
-    user: {
-        userId: string
-        email: string
-        companyName: string
-        role: string
-        createdAt?: string
-    }
+    user: User
     tokens?: {
         accessToken: string
         refreshToken: string
     }
+}
+
+export interface DashboardStats {
+    revenue: number
+    activeListings: number
+    pendingOrders: number
+    co2Saved: number
+}
+
+export interface Transaction {
+    id: string
+    material_id: string
+    buyer_id: string
+    seller_id: string
+    quantity: number
+    total_amount: number
+    currency: string
+    status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'
+    created_at: string
+    material_title?: string
+    material_images?: string[]
 }
 
 class ApiService {
@@ -101,6 +124,21 @@ class ApiService {
 
     isAuthenticated(): boolean {
         return !!this.accessToken
+    }
+
+    async getDashboardStats(): Promise<DashboardStats> {
+        return this.request<DashboardStats>('/analytics/dashboard')
+    }
+
+    async getTransactions(role: 'buyer' | 'seller' | 'all' = 'all'): Promise<Transaction[]> {
+        return this.request<Transaction[]>(`/transactions?role=${role}`)
+    }
+
+    async createTransaction(data: { material_id: string, quantity: number, total_amount: number, currency: string }): Promise<Transaction> {
+        return this.request<Transaction>('/transactions', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        })
     }
 }
 

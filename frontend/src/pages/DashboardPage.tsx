@@ -13,19 +13,32 @@ export default function DashboardPage() {
     const navigate = useNavigate()
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
+    const [stats, setStats] = useState({ revenue: 0, activeListings: 0, pendingOrders: 0, co2Saved: 0 })
+    const [recentActivity, setRecentActivity] = useState<any[]>([])
 
     useEffect(() => {
-        const fetchUser = async () => {
+        const fetchData = async () => {
             try {
                 const response = await api.getMe()
                 setUser(response.user as User)
-            } catch {
+
+                // Fetch stats only if manufacturer for now (as per backend logic)
+                if (response.user.role === 'manufacturer') {
+                    const dashboardStats = await api.getDashboardStats()
+                    setStats(dashboardStats)
+                }
+
+                // Fetch recent transactions
+                const transactions = await api.getTransactions()
+                setRecentActivity(transactions.slice(0, 5)) // Top 5 recent
+            } catch (err) {
+                console.error(err)
                 navigate('/login')
             } finally {
                 setLoading(false)
             }
         }
-        fetchUser()
+        fetchData()
     }, [navigate])
 
     const handleLogout = () => {
@@ -90,17 +103,18 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                     {isManufacturer ? (
                         <>
-                            <StatCard label="Active Listings" value="12" change="+2 this week" />
-                            <StatCard label="Total Sales" value="$24,500" change="+15% this month" />
-                            <StatCard label="CO₂e Avoided" value="2.4 tons" change="Environmental impact" />
-                            <StatCard label="Pending Orders" value="3" change="Awaiting shipment" />
+                            <StatCard label="Active Listings" value={stats.activeListings.toString()} change="All time" />
+                            <StatCard label="Total Sales" value={`$${stats.revenue.toLocaleString()}`} change="Lifetime revenue" />
+                            <StatCard label="CO₂e Avoided" value={`${stats.co2Saved.toFixed(1)} kg`} change="Environmental impact" />
+                            <StatCard label="Pending Orders" value={stats.pendingOrders.toString()} change="Action required" />
                         </>
                     ) : (
+                        // Fallback for buyer since we didn't implement buyer stats yet
                         <>
-                            <StatCard label="Materials Purchased" value="8" change="+1 this week" />
-                            <StatCard label="Total Spent" value="$18,200" change="This quarter" />
-                            <StatCard label="Scope 3 Saved" value="1.8 tons" change="CO₂e reduction" />
-                            <StatCard label="Active Inquiries" value="5" change="With suppliers" />
+                            <StatCard label="Materials Purchased" value="0" change="Start browsing" />
+                            <StatCard label="Total Spent" value="$0" change="All time" />
+                            <StatCard label="Scope 3 Saved" value="0 kg" change="CO₂e reduction" />
+                            <StatCard label="Active Inquiries" value="0" change="With suppliers" />
                         </>
                     )}
                 </div>
@@ -111,30 +125,19 @@ export default function DashboardPage() {
                     <div className="lg:col-span-2 glass-card p-6">
                         <h2 className="text-lg font-semibold text-white mb-4">Recent Activity</h2>
                         <div className="space-y-4">
-                            <ActivityItem
-                                title={isManufacturer ? "New inquiry received" : "Order confirmed"}
-                                description={isManufacturer ? "Nordic Apparel Co. interested in organic cotton" : "Silk blend from Milano Textiles shipped"}
-                                time="2 hours ago"
-                                type="info"
-                            />
-                            <ActivityItem
-                                title={isManufacturer ? "Listing view spike" : "Digital passport received"}
-                                description={isManufacturer ? "Recycled denim getting high engagement" : "Full sustainability data for linen order"}
-                                time="5 hours ago"
-                                type="success"
-                            />
-                            <ActivityItem
-                                title="Message from support"
-                                description="Your account verification is complete"
-                                time="1 day ago"
-                                type="neutral"
-                            />
-                            <ActivityItem
-                                title={isManufacturer ? "Payment received" : "Sustainability report ready"}
-                                description={isManufacturer ? "$3,200 for organic wool order" : "Q4 2024 Scope 3 emissions summary"}
-                                time="2 days ago"
-                                type="success"
-                            />
+                            {recentActivity.length > 0 ? (
+                                recentActivity.map((tx) => (
+                                    <ActivityItem
+                                        key={tx.id}
+                                        title={`Order #${tx.id.slice(0, 8)}`}
+                                        description={`${tx.quantity} ${tx.unit || 'units'} of ${tx.material_title || 'Material'}`}
+                                        time={new Date(tx.created_at).toLocaleDateString()}
+                                        type={tx.status === 'pending' ? 'info' : 'success'}
+                                    />
+                                ))
+                            ) : (
+                                <p className="text-gray-400 text-sm">No recent activity found.</p>
+                            )}
                         </div>
                     </div>
 

@@ -181,6 +181,27 @@ function MaterialCard({
     material: Material
     formatPrice: (price: number, currency: string) => string
 }) {
+    const [buying, setBuying] = useState(false)
+
+    const handlePurchase = async () => {
+        if (!confirm(`Confirm purchase of 10 ${material.unit} of ${material.title}?`)) return
+
+        setBuying(true)
+        try {
+            await api.createTransaction({
+                material_id: material.id,
+                quantity: 10,
+                total_amount: material.price * 10,
+                currency: material.currency
+            })
+            alert('Purchase successful! Check your Orders page.')
+        } catch (err) {
+            alert('Purchase failed: ' + (err as Error).message)
+        } finally {
+            setBuying(false)
+        }
+    }
+
     return (
         <div className="glass-card card-hover overflow-hidden">
             {/* Image */}
@@ -232,8 +253,12 @@ function MaterialCard({
                         {formatPrice(material.price, material.currency)}
                         <span className="text-gray-500 text-sm font-normal">/{material.unit}</span>
                     </div>
-                    <button className="btn-secondary px-4 py-2 text-sm">
-                        View Details
+                    <button
+                        onClick={handlePurchase}
+                        disabled={buying || material.quantity < 10}
+                        className="btn-primary px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {buying ? 'Processing...' : 'Buy 10'}
                     </button>
                 </div>
             </div>

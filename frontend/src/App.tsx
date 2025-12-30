@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import MaterialsPage from './pages/MaterialsPage'
+import OrdersPage from './pages/OrdersPage' // Added import
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/materials" element={<MaterialsPage />} />
         <Route path="/messages" element={<DashboardPage />} />
+        <Route path="/orders" element={<OrdersPage />} /> {/* Added route */}
       </Routes>
     </BrowserRouter>
   )
