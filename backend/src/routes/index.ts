@@ -24,8 +24,13 @@ router.use('/api/passports', passportsRouter)
 // Messages routes
 router.use('/api/messages', messagesRouter)
 
+// Transactions routes
+router.use('/api/transactions', transactionsRouter)
+
+// Analytics routes
+router.use('/api/analytics', analyticsRouter)
+
 // TODO: Implement remaining routes
-// router.use('/api/transactions', transactionRoutes)
 // router.use('/api/reports', reportRoutes)
 // router.use('/api/payments', paymentRoutes)
 
