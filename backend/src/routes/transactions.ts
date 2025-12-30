@@ -42,7 +42,7 @@ router.post(
 
             const transaction = await TransactionService.create({
                 ...req.body,
-                buyer_id: req.user!.id
+                buyer_id: req.user!.userId
             })
             res.status(201).json(transaction)
         } catch (error) {
@@ -65,7 +65,7 @@ router.put(
             const updated = await TransactionService.updateStatus(
                 req.params.id,
                 req.body.status,
-                req.user!.id
+                req.user!.userId
             )
             res.json(updated)
         } catch (error) {
