@@ -75,7 +75,7 @@ export class EmailService {
                 <span class="value" style="color: #0D9488;">Pending</span>
             </div>
             
-            <div class="total">${order.currency} ${order.totalAmount.toFixed(2)}</div>
+            <div class="total">${order.currency} ${Number(order.totalAmount).toFixed(2)}</div>
         </div>
         
         <p style="text-align: center;">
@@ -154,7 +154,7 @@ export class EmailService {
                 <span class="value">${order.quantity} ${order.unit}</span>
             </div>
             
-            <div class="total">${order.currency} ${order.totalAmount.toFixed(2)}</div>
+            <div class="total">${order.currency} ${Number(order.totalAmount).toFixed(2)}</div>
         </div>
         
         <p style="text-align: center;">
