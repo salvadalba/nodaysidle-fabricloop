@@ -3,6 +3,8 @@ import { body, param, validationResult } from 'express-validator'
 import { authenticate } from '../middleware/auth.js'
 import { TransactionService } from '../services/database/transactions.js'
 import { unprocessableEntity } from '../middleware/errorHandler.js'
+import { EmailService } from '../services/email.js'
+import { query } from '../config/database.js'
 
 const router = express.Router()
 
@@ -36,14 +38,45 @@ router.post(
     ],
     async (req: any, res: any, next: any) => {
         try {
-            // In a real flow, we'd fetch price from DB to avoid client manipulation.
-            // For now, we assume the client sends the total (or we could calculate it here).
-            // Let's rely on the service to just take the payload for this MVP step.
-
             const transaction = await TransactionService.create({
                 ...req.body,
                 buyer_id: req.user!.userId
             })
+
+            // Send order confirmation emails (async, don't block response)
+            try {
+                // Fetch material and user details for email
+                const materialRes = await query(
+                    'SELECT m.title, m.unit, u.email as seller_email, u.company_name as seller_company FROM materials m JOIN users u ON m.seller_id = u.id WHERE m.id = $1',
+                    [req.body.material_id]
+                )
+                const buyerRes = await query(
+                    'SELECT email, company_name FROM users WHERE id = $1',
+                    [req.user!.userId]
+                )
+
+                if (materialRes.rows[0] && buyerRes.rows[0]) {
+                    const orderDetails = {
+                        orderId: transaction.id,
+                        materialTitle: materialRes.rows[0].title,
+                        quantity: transaction.quantity,
+                        unit: transaction.unit || 'kg',
+                        totalAmount: transaction.total_amount,
+                        currency: transaction.currency,
+                        buyerEmail: buyerRes.rows[0].email,
+                        buyerCompany: buyerRes.rows[0].company_name,
+                        sellerEmail: materialRes.rows[0].seller_email,
+                        sellerCompany: materialRes.rows[0].seller_company
+                    }
+
+                    // Fire and forget - don't block response
+                    EmailService.sendOrderConfirmationToBuyer(orderDetails)
+                    EmailService.sendOrderNotificationToSeller(orderDetails)
+                }
+            } catch (emailError) {
+                console.error('Failed to send order emails:', emailError)
+            }
+
             res.status(201).json(transaction)
         } catch (error) {
             next(error)
