@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { useCartStore } from '../stores/CartStore'
 
 interface User {
     userId: string
@@ -15,13 +16,14 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true)
     const [stats, setStats] = useState({ revenue: 0, activeListings: 0, pendingOrders: 0, co2Saved: 0 })
     const [recentActivity, setRecentActivity] = useState<any[]>([])
+    const cartItemCount = useCartStore((state) => state.items.reduce((sum, item) => sum + item.quantity, 0))
 
     useEffect(() => {
         const fetchUser = async () => {
             try {
                 const response = await api.getMe()
                 setUser(response.user as User)
-                return response.user // Return user to verify success
+                return response.user
             } catch {
                 navigate('/login')
                 return null
@@ -32,18 +34,14 @@ export default function DashboardPage() {
 
         const fetchData = async (currentUser: User) => {
             try {
-                // Fetch stats only if manufacturer
                 if (currentUser.role === 'manufacturer') {
                     const dashboardStats = await api.getDashboardStats()
                     setStats(dashboardStats)
                 }
-
-                // Fetch recent transactions
                 const transactions = await api.getTransactions()
                 setRecentActivity(transactions.slice(0, 5))
             } catch (err) {
                 console.error('Failed to fetch dashboard data:', err)
-                // Do NOT navigate to login here. Just log the error.
             }
         }
 
@@ -59,8 +57,8 @@ export default function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0d0d0d' }}>
-                <div className="accent-text">Loading...</div>
+            <div className="min-h-screen flex items-center justify-center bg-dark">
+                <div className="text-primary">Loading...</div>
             </div>
         )
     }
@@ -68,9 +66,9 @@ export default function DashboardPage() {
     const isManufacturer = user?.role === 'manufacturer'
 
     return (
-        <div className="min-h-screen" style={{ backgroundColor: '#0d0d0d' }}>
+        <div className="min-h-screen bg-dark">
             {/* Navigation */}
-            <header style={{ backgroundColor: '#141414', borderBottom: '1px solid rgba(212, 165, 165, 0.1)' }}>
+            <header className="bg-card border-b border-primary/10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">
                         <Link to="/" className="flex items-center gap-3">
@@ -82,12 +80,22 @@ export default function DashboardPage() {
                             <span className="text-xl font-semibold text-white">FabricLoop</span>
                         </Link>
                         <nav className="flex items-center gap-6">
-                            <Link to="/dashboard" className="text-white font-medium">Dashboard</Link>
+                            <Link to="/dashboard" className="text-primary font-medium">Dashboard</Link>
                             <Link to="/materials" className="text-gray-400 hover:text-white transition-colors">Materials</Link>
-                            <Link to="/messages" className="text-gray-400 hover:text-white transition-colors">Messages</Link>
+                            <Link to="/orders" className="text-gray-400 hover:text-white transition-colors">Orders</Link>
+                            <Link to="/cart" className="text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                {cartItemCount > 0 && (
+                                    <span className="bg-primary text-dark text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {cartItemCount}
+                                    </span>
+                                )}
+                            </Link>
                             <div className="h-6 w-px bg-gray-700" />
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium" style={{ backgroundColor: 'rgba(212, 165, 165, 0.2)', color: '#d4a5a5' }}>
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-primary/20 text-primary">
                                     {user?.companyName?.charAt(0) || 'U'}
                                 </div>
                                 <button onClick={handleLogout} className="text-gray-400 hover:text-white text-sm transition-colors">
@@ -120,7 +128,6 @@ export default function DashboardPage() {
                             <StatCard label="Pending Orders" value={stats.pendingOrders.toString()} change="Action required" />
                         </>
                     ) : (
-                        // Fallback for buyer since we didn't implement buyer stats yet
                         <>
                             <StatCard label="Materials Purchased" value="0" change="Start browsing" />
                             <StatCard label="Total Spent" value="$0" change="All time" />
@@ -165,10 +172,10 @@ export default function DashboardPage() {
                                 </>
                             ) : (
                                 <>
-                                    <QuickAction icon="🔍" label="Browse Materials" />
-                                    <QuickAction icon="📋" label="View Orders" />
+                                    <Link to="/materials"><QuickAction icon="🔍" label="Browse Materials" /></Link>
+                                    <Link to="/orders"><QuickAction icon="📋" label="View Orders" /></Link>
+                                    <Link to="/cart"><QuickAction icon="🛒" label="View Cart" /></Link>
                                     <QuickAction icon="📊" label="Sustainability Report" />
-                                    <QuickAction icon="💬" label="Contact Suppliers" />
                                 </>
                             )}
                         </div>
@@ -217,7 +224,7 @@ function StatCard({ label, value, change }: { label: string; value: string; chan
         <div className="glass-card p-5">
             <div className="text-gray-400 text-sm mb-1">{label}</div>
             <div className="text-2xl font-bold text-white mb-1">{value}</div>
-            <div className="text-xs accent-text">{change}</div>
+            <div className="text-xs text-primary">{change}</div>
         </div>
     )
 }
@@ -242,7 +249,7 @@ function ActivityItem({ title, description, time, type }: { title: string; descr
 
 function QuickAction({ icon, label }: { icon: string; label: string }) {
     return (
-        <button className="w-full flex items-center gap-3 p-3 rounded-lg transition-all hover:bg-white/5 text-left" style={{ border: '1px solid rgba(212, 165, 165, 0.1)' }}>
+        <button className="w-full flex items-center gap-3 p-3 rounded-lg transition-all hover:bg-white/5 text-left border border-primary/10">
             <span className="text-lg">{icon}</span>
             <span className="text-gray-300 text-sm">{label}</span>
         </button>
@@ -251,7 +258,7 @@ function QuickAction({ icon, label }: { icon: string; label: string }) {
 
 function MaterialCard({ title, type, quantity, price, co2 }: { title: string; type: string; quantity: string; price: string; co2: string }) {
     return (
-        <div className="p-4 rounded-xl transition-all hover:bg-white/5" style={{ border: '1px solid rgba(212, 165, 165, 0.1)' }}>
+        <div className="p-4 rounded-xl transition-all hover:bg-white/5 border border-primary/10">
             <div className="flex justify-between items-start mb-2">
                 <h3 className="text-white font-medium">{title}</h3>
                 <span className="badge">{type}</span>
@@ -259,7 +266,7 @@ function MaterialCard({ title, type, quantity, price, co2 }: { title: string; ty
             <div className="text-gray-400 text-sm mb-3">{quantity} available</div>
             <div className="flex justify-between text-sm">
                 <span className="text-white font-medium">{price}</span>
-                <span className="text-green-400">{co2}</span>
+                <span className="text-secondary">{co2}</span>
             </div>
         </div>
     )

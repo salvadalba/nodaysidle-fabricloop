@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { useCartStore } from '../stores/CartStore'
 
 interface Material {
     id: string
@@ -27,6 +28,7 @@ export default function MaterialsPage() {
     const [searchTerm, setSearchTerm] = useState('')
     const [materialType, setMaterialType] = useState('')
     const [priceRange, setPriceRange] = useState('')
+    const cartItemCount = useCartStore((state) => state.items.reduce((sum, item) => sum + item.quantity, 0))
 
     useEffect(() => {
         fetchMaterials()
@@ -73,9 +75,9 @@ export default function MaterialsPage() {
     }
 
     return (
-        <div className="min-h-screen" style={{ backgroundColor: '#0d0d0d' }}>
+        <div className="min-h-screen bg-dark">
             {/* Navigation */}
-            <header style={{ backgroundColor: '#141414', borderBottom: '1px solid rgba(212, 165, 165, 0.1)' }}>
+            <header className="bg-card border-b border-primary/10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">
                         <Link to="/" className="flex items-center gap-3">
@@ -88,8 +90,18 @@ export default function MaterialsPage() {
                         </Link>
                         <nav className="flex items-center gap-6">
                             <Link to="/dashboard" className="text-gray-400 hover:text-white transition-colors">Dashboard</Link>
-                            <Link to="/materials" className="text-white font-medium">Materials</Link>
-                            <Link to="/messages" className="text-gray-400 hover:text-white transition-colors">Messages</Link>
+                            <Link to="/materials" className="text-primary font-medium">Materials</Link>
+                            <Link to="/orders" className="text-gray-400 hover:text-white transition-colors">Orders</Link>
+                            <Link to="/cart" className="text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                {cartItemCount > 0 && (
+                                    <span className="bg-primary text-dark text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {cartItemCount}
+                                    </span>
+                                )}
+                            </Link>
                             <div className="h-6 w-px bg-gray-700" />
                             <button onClick={handleLogout} className="text-gray-400 hover:text-white text-sm transition-colors">
                                 Sign out
@@ -156,7 +168,7 @@ export default function MaterialsPage() {
                 {/* Results */}
                 {loading ? (
                     <div className="text-center py-12">
-                        <div className="accent-text">Loading materials...</div>
+                        <div className="text-primary">Loading materials...</div>
                     </div>
                 ) : materials.length === 0 ? (
                     <div className="text-center py-12">
@@ -181,25 +193,14 @@ function MaterialCard({
     material: Material
     formatPrice: (price: number, currency: string) => string
 }) {
-    const [buying, setBuying] = useState(false)
+    const [quantity, setQuantity] = useState(10)
+    const [added, setAdded] = useState(false)
+    const addItem = useCartStore((state) => state.addItem)
 
-    const handlePurchase = async () => {
-        if (!confirm(`Confirm purchase of 10 ${material.unit} of ${material.title}?`)) return
-
-        setBuying(true)
-        try {
-            await api.createTransaction({
-                material_id: material.id,
-                quantity: 10,
-                total_amount: material.price * 10,
-                currency: material.currency
-            })
-            alert('Purchase successful! Check your Orders page.')
-        } catch (err) {
-            alert('Purchase failed: ' + (err as Error).message)
-        } finally {
-            setBuying(false)
-        }
+    const handleAddToCart = () => {
+        addItem(material, quantity)
+        setAdded(true)
+        setTimeout(() => setAdded(false), 2000)
     }
 
     return (
@@ -210,8 +211,8 @@ function MaterialCard({
                 style={{
                     backgroundImage: material.thumbnail
                         ? `url(${material.thumbnail})`
-                        : 'linear-gradient(135deg, rgba(212, 165, 165, 0.2), rgba(212, 165, 165, 0.05))',
-                    backgroundColor: '#1a1a1a',
+                        : 'linear-gradient(135deg, rgba(167, 217, 48, 0.2), rgba(167, 217, 48, 0.05))',
+                    backgroundColor: 'var(--bg-surface)',
                 }}
             >
                 {!material.thumbnail && (
@@ -239,7 +240,7 @@ function MaterialCard({
                         {material.quantity} {material.unit} available
                     </span>
                     {material.carbonFootprint && (
-                        <span className="text-green-400 flex items-center gap-1">
+                        <span className="text-secondary flex items-center gap-1">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
@@ -248,17 +249,43 @@ function MaterialCard({
                     )}
                 </div>
 
-                <div className="flex justify-between items-center">
-                    <div className="text-xl font-bold accent-text">
+                <div className="flex justify-between items-center mb-4">
+                    <div className="text-xl font-bold text-primary">
                         {formatPrice(material.price, material.currency)}
                         <span className="text-gray-500 text-sm font-normal">/{material.unit}</span>
                     </div>
+                </div>
+
+                {/* Quantity + Add to Cart */}
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center border border-white/10 rounded-lg overflow-hidden">
+                        <button
+                            onClick={() => setQuantity(Math.max(1, quantity - 5))}
+                            className="px-3 py-2 bg-surface text-white hover:bg-white/5 transition-colors"
+                        >
+                            −
+                        </button>
+                        <input
+                            type="number"
+                            min="1"
+                            max={material.quantity}
+                            value={quantity}
+                            onChange={(e) => setQuantity(Math.max(1, Math.min(material.quantity, parseInt(e.target.value) || 1)))}
+                            className="w-16 text-center bg-transparent text-white border-x border-white/10 py-2 outline-none"
+                        />
+                        <button
+                            onClick={() => setQuantity(Math.min(material.quantity, quantity + 5))}
+                            className="px-3 py-2 bg-surface text-white hover:bg-white/5 transition-colors"
+                        >
+                            +
+                        </button>
+                    </div>
                     <button
-                        onClick={handlePurchase}
-                        disabled={buying || material.quantity < 10}
-                        className="btn-primary px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={handleAddToCart}
+                        disabled={material.quantity < 1}
+                        className={`btn-primary flex-1 py-2 text-sm transition-all ${added ? 'bg-secondary' : ''}`}
                     >
-                        {buying ? 'Processing...' : 'Buy 10'}
+                        {added ? '✓ Added!' : 'Add to Cart'}
                     </button>
                 </div>
             </div>
