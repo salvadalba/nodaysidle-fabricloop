@@ -34,8 +34,8 @@ export class TransactionService {
             // 2. Create the transaction record
             const insertRes = await client.query(
                 `INSERT INTO transactions 
-        (material_id, buyer_id, seller_id, quantity, total_amount, currency, status, unit, unit_price)
-        VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7, $8)
+        (material_id, buyer_id, seller_id, quantity, total_amount, currency, status, unit, unit_price, shipping_address)
+        VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7, $8, $9)
         RETURNING *`,
                 [
                     data.material_id,
@@ -45,7 +45,8 @@ export class TransactionService {
                     data.total_amount,
                     data.currency,
                     material.unit || 'kg',
-                    material.price || (data.total_amount / data.quantity)
+                    material.price || (data.total_amount / data.quantity),
+                    'To be provided'
                 ]
             )
 
