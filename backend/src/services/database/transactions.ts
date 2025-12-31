@@ -46,7 +46,7 @@ export class TransactionService {
                     data.currency,
                     material.unit || 'kg',
                     material.price || (data.total_amount / data.quantity),
-                    'To be provided'
+                    JSON.stringify({ note: 'To be provided by buyer' })
                 ]
             )
 
