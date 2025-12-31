@@ -148,7 +148,7 @@ fabricloop/
 - [x] Material marketplace
 - [x] Shopping cart
 - [x] Order management
-- [ ] Order confirmation emails
+- [x] Order confirmation emails
 - [ ] Digital Product Passports (DPP)
 - [ ] Stripe payment integration
 - [ ] Real-time messaging
